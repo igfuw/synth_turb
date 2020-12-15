@@ -1,0 +1,10 @@
+@PACKAGE_INIT@
+
+get_filename_component(synth_turb_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+include(CMakeFindDependencyMacro)
+
+find_dependency(OpenMP REQUIRED)
+
+if(NOT TARGET synth_turb)
+    include("${synth_turb_CMAKE_DIR}/synth_turb-targets.cmake")
+endif()
