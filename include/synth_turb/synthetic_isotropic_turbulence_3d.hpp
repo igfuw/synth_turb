@@ -1,7 +1,6 @@
-// Generating of a velocity field from a prescribed energy spectrum,
+// Generating a velocity field from a prescribed energy spectrum,
 // Sources: Sidin et al. in Physics of Fluids (2009), Zhou et al. Phys. of Fluids (2018), Fortran implementation from Gustavo C. Abade
 
-// TODO: OpenMP
 // TODO: Lmax powinno byc takie jak moja domena? a nie 100m? Zobacz tez cutoff wavenumber w Zhou et al.
 // TODO: Lmin powinno byc co najwyzej jak moj grid size?
 // TODO: uzyc poprawki do spektrum energii dla malych skal?
@@ -61,8 +60,8 @@ namespace SynthTurb
         E[n] = 1.44 * pow(eps, 2./3.) * pow(k[n], -5./3.);
       
       // Wave vector differences
-      dk[0] =        /* 0.5 * */ (k[1]        - k[0]);
-      dk[Nmodes-1] = /* 0.5 * */ (k[Nmodes-1] - k[Nmodes-2]);
+      dk[0] =         0.5 *  (k[1]        - k[0]);
+      dk[Nmodes-1] =  0.5 *  (k[Nmodes-1] - k[Nmodes-2]);
       
       for(int n=1; n<Nmodes-1; ++n)
         dk[n] = 0.5 * (k[n+1] - k[n-1]);
@@ -100,8 +99,8 @@ namespace SynthTurb
           // generate rand uniform vector
           real_t h  = h_d(rand_eng);
           real_t th = th_d(rand_eng);
-          e[0] = std::sqrt(1. - h*h) * std::cos(th); 
-          e[1] = std::sqrt(1. - h*h) * std::sin(th); 
+          e[0] = sqrt(1. - h*h) * cos(th); 
+          e[1] = sqrt(1. - h*h) * sin(th); 
           e[2] = h;
 
   //        // std::cerr << "h: " << h << " th: " << th << std::endl;
@@ -154,11 +153,40 @@ namespace SynthTurb
       }
     }
 
-    // generate velocity field assuming uniform grid size and spacing
-    // positions: 0, dx, 2dx, 3dx,...
-    // TODO: staggering?
-    // TODO: ensure peridiocity at boundaries?
-    // TODO: OpenMP 
+    // generate velocity field assuming uniform grid size and spacing, Arakawa-C staggering 
+    // TODO: periodic bcond (velocities at opposite edges are equal)
+    template<int nx>
+    void generate_velocity_field_ArakawaC(real_t u[nx+1][nx][nx], real_t v[nx][nx+1][nx], real_t w[nx][nx][nx+1], const real_t &dx, const real_t &t)
+    {
+      #pragma omp parallel for
+      for(int i=0; i<nx; ++i)
+        for(int j=0; j<nx; ++j)
+          for(int k=0; k<nx; ++k)
+          {
+            u[i][j][k] = 0;
+            v[i][j][k] = 0;
+            w[i][j][k] = 0;
+
+            for(int n=0; n<Nmodes; ++n)
+            {
+              const real_t wnt = wn[n] * t;
+              //// std::cerr << i << " " << j << " " << k << " wnt: " << wnt << std::endl;
+              for(int m=0; m<Nwaves; ++m)
+              {
+                const real_t xu = (knm[0][n][m] * i * dx + knm[1][n][m] * (j+0.5) * dx + knm[2][n][m] * (k+0.5) * dx) + wnt;
+                u[i][j][k] += Anm[0][n][m]*cos(xu) + Bnm[0][n][m]*sin(xu); 
+                // std::cerr << i << " " << j << " " << k << " x: " << x << std::endl;
+
+                const real_t xv = (knm[0][n][m] * (i+0.5) * dx + knm[1][n][m] * j * dx + knm[2][n][m] * (k+0.5) * dx) + wnt;
+                v[i][j][k] += Anm[1][n][m]*cos(xv) + Bnm[1][n][m]*sin(xv); 
+
+                const real_t xw = (knm[0][n][m] * (i+0.5) * dx + knm[1][n][m] * (j+0.5) * dx + knm[2][n][m] * k * dx) + wnt;
+                w[i][j][k] += Anm[2][n][m]*cos(xw) + Bnm[2][n][m]*sin(xw); 
+              }
+            }
+          }
+    };
+
     template<int nx>
     void generate_velocity_field(real_t u[nx][nx][nx], real_t v[nx][nx][nx], real_t w[nx][nx][nx], const real_t &dx, const real_t &t)
     {
@@ -178,8 +206,8 @@ namespace SynthTurb
               for(int m=0; m<Nwaves; ++m)
               {
                 const real_t x = (knm[0][n][m] * i * dx + knm[1][n][m] * j * dx + knm[2][n][m] * k * dx) + wnt;
-                // std::cerr << i << " " << j << " " << k << " x: " << x << std::endl;
                 u[i][j][k] += Anm[0][n][m]*cos(x) + Bnm[0][n][m]*sin(x); 
+                // std::cerr << i << " " << j << " " << k << " x: " << x << std::endl;
                 v[i][j][k] += Anm[1][n][m]*cos(x) + Bnm[1][n][m]*sin(x); 
                 w[i][j][k] += Anm[2][n][m]*cos(x) + Bnm[2][n][m]*sin(x); 
               }
