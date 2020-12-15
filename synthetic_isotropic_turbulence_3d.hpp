@@ -3,10 +3,14 @@
 
 // TODO: OpenMP
 // TODO: Lmax powinno byc takie jak moja domena? a nie 100m? Zobacz tez cutoff wavenumber w Zhou et al.
+// TODO: Lmin powinno byc co najwyzej jak moj grid size?
 // TODO: uzyc poprawki do spektrum energii dla malych skal?
+// TODO: ensure periodicity?
 
 #include <random>
 #include <cmath>
+
+#include <iostream>
 
 namespace SynthTurb
 {
@@ -24,15 +28,15 @@ namespace SynthTurb
            dk[Nmodes],  // differences between norms of subsequent wave vectors
            E[Nmodes],   // kinetic energy in a mode
            var[Nmodes], // variances 
-           w[Nmodes];   // frequencies 
+           wn[Nmodes];   // frequencies 
 
     const real_t lambda = 1; // unsteadiness parameter, within [0,1]; see Sidin et al. 2009
-
-    public:
 
     real_t Anm[3][Nmodes][Nwaves],
            Bnm[3][Nmodes][Nwaves],
            knm[3][Nmodes][Nwaves];
+
+    public:
  
     // ctor
     SynthTurb3d(
@@ -46,9 +50,10 @@ namespace SynthTurb
     {
       // Geometric series for the wavenumbers; Eq. A4 in Sidin et al. 2009
       const real_t alpha = pow(Lmax / Lmin, 1. / (Nmodes - 1));
+      // std::cerr << "alpha: " << alpha << std::endl;
       k[0] = 2. * M_PI / Lmax;
       for(int n=1; n<Nmodes; ++n)
-        k[n] = pow(k[0] * alpha, n);
+        k[n] = k[0] * pow(alpha, n);
 
 
       // Energy spectrum; first equation in Appendix of Sidin et al. 2009, but without the corrections f_L and f_eta
@@ -68,7 +73,19 @@ namespace SynthTurb
 
       // Frequencies; Eq. A7 in Sidin et al. 2009
       for(int n=0; n<Nmodes; ++n)
-        w[n] = lambda * sqrt(E[n] * k[n] * k[n] * k[n]);
+        wn[n] = lambda * sqrt(E[n] * k[n] * k[n] * k[n]);
+
+
+      // std::cerr << "SynthTurb3d ctor debug output:" << std::endl;
+      for(int n=0; n<Nmodes; ++n)
+      {
+        // std::cerr << "n: " << n << " k[n]: " << k[n] << std::endl;
+        // std::cerr << "n: " << n << " E[n]: " << E[n] << std::endl;
+        // std::cerr << "n: " << n << " dk[n]: " << dk[n] << std::endl;
+        // std::cerr << "n: " << n << " var[n]: " << var[n] << std::endl;
+        // std::cerr << "n: " << n << " wn[n]: " << wn[n] << std::endl;
+        // std::cerr << std::endl;
+      }
     }
 
     // fills the kn, An and Bn arrays
@@ -83,13 +100,17 @@ namespace SynthTurb
           // generate rand uniform vector
           real_t h  = h_d(rand_eng);
           real_t th = th_d(rand_eng);
-          e[0] = sqrt(1 - h*h) * cos(th); 
-          e[1] = sqrt(1 - h*h) * sin(th); 
+          e[0] = std::sqrt(1. - h*h) * std::cos(th); 
+          e[1] = std::sqrt(1. - h*h) * std::sin(th); 
           e[2] = h;
 
+  //        // std::cerr << "h: " << h << " th: " << th << std::endl;
+    //      // std::cerr << "e=(" << e[0] << "," << e[1] << "," << e[2] << std::endl;
+
           // knm = random vector * magnitude
-          for(int i=0; i>3; ++i)
-            knm[i][n][m] = e[i] * k[n];
+          for(int i=0; i<3; ++i)
+            knm[i][n][m] = e[i];// * k[n];
+//          // std::cerr << "k[][n][m]=(" << knm[0][n][m] << "," << knm[1][n][m] << "," << knm[2][n][m] << std::endl;
 
           // calculate coefficients Anm and Bnm - see Zhou et al.
           real_t AA[3];
@@ -109,10 +130,61 @@ namespace SynthTurb
           Bnm[2][n][m] = BB[0] * e[1] - BB[1] * e[0];
         }
       }
+
+      // std::cerr << "SynthTurb3d generate_random_modes debug output:" << std::endl;
+      for(int n=0; n<Nmodes; ++n)
+      {
+        for(int m=0; m<Nwaves; ++m)
+        {
+          // std::cerr << "n: " << n << " m: " << m << " knm[0][n][m]: " << knm[0][n][m] << std::endl;
+          // std::cerr << "n: " << n << " m: " << m << " knm[1][n][m]: " << knm[1][n][m] << std::endl;
+          // std::cerr << "n: " << n << " m: " << m << " knm[2][n][m]: " << knm[2][n][m] << std::endl;
+
+          // std::cerr << "n: " << n << " m: " << m << " Anm[0][n][m]: " << Anm[0][n][m] << std::endl;
+          // std::cerr << "n: " << n << " m: " << m << " Anm[1][n][m]: " << Anm[1][n][m] << std::endl;
+          // std::cerr << "n: " << n << " m: " << m << " Anm[2][n][m]: " << Anm[2][n][m] << std::endl;
+
+          // std::cerr << "n: " << n << " m: " << m << " Bnm[0][n][m]: " << Bnm[0][n][m] << std::endl;
+          // std::cerr << "n: " << n << " m: " << m << " Bnm[1][n][m]: " << Bnm[1][n][m] << std::endl;
+          // std::cerr << "n: " << n << " m: " << m << " Bnm[2][n][m]: " << Bnm[2][n][m] << std::endl;
+
+          // std::cerr << std::endl;
+        }
+        // std::cerr << std::endl;
+      }
     }
 
-    void generate_velocity_field()
+    // generate velocity field assuming uniform grid size and spacing
+    // positions: 0, dx, 2dx, 3dx,...
+    // TODO: staggering?
+    // TODO: ensure peridiocity at boundaries?
+    // TODO: OpenMP 
+    template<int nx>
+    void generate_velocity_field(real_t u[nx][nx][nx], real_t v[nx][nx][nx], real_t w[nx][nx][nx], const real_t &dx, const real_t &t)
     {
+      #pragma omp parallel for
+      for(int i=0; i<nx; ++i)
+        for(int j=0; j<nx; ++j)
+          for(int k=0; k<nx; ++k)
+          {
+            u[i][j][k] = 0;
+            v[i][j][k] = 0;
+            w[i][j][k] = 0;
+
+            for(int n=0; n<Nmodes; ++n)
+            {
+              const real_t wnt = wn[n] * t;
+              //// std::cerr << i << " " << j << " " << k << " wnt: " << wnt << std::endl;
+              for(int m=0; m<Nwaves; ++m)
+              {
+                const real_t x = (knm[0][n][m] * i * dx + knm[1][n][m] * j * dx + knm[2][n][m] * k * dx) + wnt;
+                // std::cerr << i << " " << j << " " << k << " x: " << x << std::endl;
+                u[i][j][k] += Anm[0][n][m]*cos(x) + Bnm[0][n][m]*sin(x); 
+                v[i][j][k] += Anm[1][n][m]*cos(x) + Bnm[1][n][m]*sin(x); 
+                w[i][j][k] += Anm[2][n][m]*cos(x) + Bnm[2][n][m]*sin(x); 
+              }
+            }
+          }
     };
   };
 };
