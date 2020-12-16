@@ -102,14 +102,9 @@ namespace SynthTurb
         {
           this->generate_unit_wavevectors(m);
 
-
-  //        // std::cerr << "h: " << h << " th: " << th << std::endl;
-    //      // std::cerr << "e=(" << e[0] << "," << e[1] << "," << e[2] << std::endl;
-
           // knm = random vector * magnitude
           for(int i=0; i<3; ++i)
             knm[i][n][m] = e[i] * k[n];
-//          // std::cerr << "k[][n][m]=(" << knm[0][n][m] << "," << knm[1][n][m] << "," << knm[2][n][m] << std::endl;
 
           // calculate coefficients Anm and Bnm - see Zhou et al.
           real_t AA[3];
@@ -128,28 +123,6 @@ namespace SynthTurb
           Bnm[1][n][m] = BB[2] * e[0] - BB[0] * e[2];
           Bnm[2][n][m] = BB[0] * e[1] - BB[1] * e[0];
         }
-      }
-
-      // std::cerr << "SynthTurb3d generate_random_modes debug output:" << std::endl;
-      for(int n=0; n<Nmodes; ++n)
-      {
-        for(int m=0; m<Nwaves; ++m)
-        {
-          // std::cerr << "n: " << n << " m: " << m << " knm[0][n][m]: " << knm[0][n][m] << std::endl;
-          // std::cerr << "n: " << n << " m: " << m << " knm[1][n][m]: " << knm[1][n][m] << std::endl;
-          // std::cerr << "n: " << n << " m: " << m << " knm[2][n][m]: " << knm[2][n][m] << std::endl;
-
-          // std::cerr << "n: " << n << " m: " << m << " Anm[0][n][m]: " << Anm[0][n][m] << std::endl;
-          // std::cerr << "n: " << n << " m: " << m << " Anm[1][n][m]: " << Anm[1][n][m] << std::endl;
-          // std::cerr << "n: " << n << " m: " << m << " Anm[2][n][m]: " << Anm[2][n][m] << std::endl;
-
-          // std::cerr << "n: " << n << " m: " << m << " Bnm[0][n][m]: " << Bnm[0][n][m] << std::endl;
-          // std::cerr << "n: " << n << " m: " << m << " Bnm[1][n][m]: " << Bnm[1][n][m] << std::endl;
-          // std::cerr << "n: " << n << " m: " << m << " Bnm[2][n][m]: " << Bnm[2][n][m] << std::endl;
-
-          // std::cerr << std::endl;
-        }
-        // std::cerr << std::endl;
       }
     }
 
