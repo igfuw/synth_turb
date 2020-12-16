@@ -1,10 +1,9 @@
 // Generating a velocity field from a prescribed energy spectrum,
 // Sources: Sidin et al. in Physics of Fluids (2009), Zhou et al. Phys. of Fluids (2018), Fortran implementation from Gustavo C. Abade
 
-// TODO: Lmax powinno byc takie jak moja domena? a nie 100m? Zobacz tez cutoff wavenumber w Zhou et al.
-// TODO: Lmin powinno byc co najwyzej jak moj grid size?
 // TODO: uzyc poprawki do spektrum energii dla malych skal?
-// TODO: ensure periodicity?
+
+#pragma once
 
 #include <random>
 #include <cmath>
@@ -17,9 +16,7 @@ namespace SynthTurb
   class SynthTurb3d_common
   {
     private:
-    std::default_random_engine rand_eng;
 
-    std::uniform_real_distribution<real_t> h_d, th_d; // random numbers used in generating k[3]
     real_t AA[3],
            BB[3]; // magnitues of A and B coefficients
 
@@ -35,6 +32,9 @@ namespace SynthTurb
            knm[3][Nmodes][Nwaves];
 
     protected:
+    std::default_random_engine rand_eng;
+    std::uniform_real_distribution<real_t> h_d, th_d; // random numbers used in generating e[3]
+
     real_t k[Nmodes];   // norms of wave vectors
     real_t e[3]; // random unit vector
 
@@ -49,14 +49,6 @@ namespace SynthTurb
     )
     {
       this->generate_wavenumbers(Lmax, Lmin);
-      // Geometric series for the wavenumbers; Eq. A4 in Sidin et al. 2009
-      /*
-      const real_t alpha = pow(Lmax / Lmin, 1. / (Nmodes - 1));
-      // std::cerr << "alpha: " << alpha << std::endl;
-      k[0] = 2. * M_PI / Lmax;
-      for(int n=1; n<Nmodes; ++n)
-        k[n] = k[0] * pow(alpha, n);
-        */
 
       // Energy spectrum; first equation in Appendix of Sidin et al. 2009, but without the corrections f_L and f_eta
       for(int n=0; n<Nmodes; ++n)
@@ -109,14 +101,6 @@ namespace SynthTurb
         for(int m=0; m<Nwaves; ++m)
         {
           this->generate_unit_wavevectors(m);
-          // generate rand unit vector
-          /*
-          real_t h  = h_d(rand_eng);
-          real_t th = th_d(rand_eng);
-          e[0] = sqrt(1. - h*h) * cos(th); 
-          e[1] = sqrt(1. - h*h) * sin(th); 
-          e[2] = h;
-          */
 
 
   //        // std::cerr << "h: " << h << " th: " << th << std::endl;
@@ -238,41 +222,5 @@ namespace SynthTurb
             calculate_velocity_field(u[i][j][k], v[i][j][k], w[i][j][k], x, t);
           }
     };
-  };
-
-
-  template<class real_t, int Nmodes, int Nwaves>
-  class SynthTurb3d_periodic_box : public SynthTurb3d_common<real_t, Nmodes, Nwaves>
-  {
-    using parent_t = SynthTurb3d_common<real_t, Nmodes, Nwaves>;
-
-    void generate_wavenumbers(const real_t &Lmax, const real_t &Lmin) override
-    {
-      // wavenumbers in the form k = n * 2 PI / L, where n=1,2,3,...,Nmodes to get periodic flow 
-      for(int n=0; n<Nmodes; ++n)
-        this->k[n] = (n+1) * (2. * M_PI / Lmax);
-    }
-
-    void generate_unit_wavevectors(const int &m) override
-    {
-      // generate unit vector along xyz
-      if(Nwaves!=3) throw std::runtime_error("Nwaves needs to be 3 for periodic flow");
-      this->e[0]=0;
-      this->e[1]=0;
-      this->e[2]=0;
-      this->e[m]=1;
-    }
-
-    public:
-
-    //ctor
-    SynthTurb3d_periodic_box(
-      const real_t &eps,        // TKE dissipation rate [m2/s3]
-      const real_t &Lmax = 100, // maximum length scale [m]
-      const real_t &Lmin = 1e-3 // Kolmogorov length scale [m]
-    )
-    {
-      this->init(eps, Lmax, Lmin);
-    }
   };
 };
