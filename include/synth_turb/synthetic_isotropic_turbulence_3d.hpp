@@ -78,12 +78,12 @@ namespace SynthTurb
       // std::cerr << "SynthTurb3d ctor debug output:" << std::endl;
       for(int n=0; n<Nmodes; ++n)
       {
-        // std::cerr << "n: " << n << " k[n]: " << k[n] << std::endl;
-        // std::cerr << "n: " << n << " E[n]: " << E[n] << std::endl;
-        // std::cerr << "n: " << n << " dk[n]: " << dk[n] << std::endl;
-        // std::cerr << "n: " << n << " var[n]: " << var[n] << std::endl;
-        // std::cerr << "n: " << n << " wn[n]: " << wn[n] << std::endl;
-        // std::cerr << std::endl;
+         std::cerr << "n: " << n << " k[n]: " << k[n] << std::endl;
+         std::cerr << "n: " << n << " E[n]: " << E[n] << std::endl;
+         std::cerr << "n: " << n << " dk[n]: " << dk[n] << std::endl;
+         std::cerr << "n: " << n << " var[n]: " << var[n] << std::endl;
+         std::cerr << "n: " << n << " wn[n]: " << wn[n] << std::endl;
+         std::cerr << std::endl;
       }
     }
 
@@ -108,7 +108,7 @@ namespace SynthTurb
 
           // knm = random vector * magnitude
           for(int i=0; i<3; ++i)
-            knm[i][n][m] = e[i];// * k[n];
+            knm[i][n][m] = e[i] * k[n];
 //          // std::cerr << "k[][n][m]=(" << knm[0][n][m] << "," << knm[1][n][m] << "," << knm[2][n][m] << std::endl;
 
           // calculate coefficients Anm and Bnm - see Zhou et al.
@@ -153,39 +153,39 @@ namespace SynthTurb
       }
     }
 
-    // generate velocity field assuming uniform grid size and spacing, Arakawa-C staggering 
-    // TODO: periodic bcond (velocities at opposite edges are equal)
-    template<int nx>
-    void generate_velocity_field_ArakawaC(real_t u[nx+1][nx][nx], real_t v[nx][nx+1][nx], real_t w[nx][nx][nx+1], const real_t &dx, const real_t &t)
-    {
-      #pragma omp parallel for
-      for(int i=0; i<nx; ++i)
-        for(int j=0; j<nx; ++j)
-          for(int k=0; k<nx; ++k)
-          {
-            u[i][j][k] = 0;
-            v[i][j][k] = 0;
-            w[i][j][k] = 0;
-
-            for(int n=0; n<Nmodes; ++n)
-            {
-              const real_t wnt = wn[n] * t;
-              //// std::cerr << i << " " << j << " " << k << " wnt: " << wnt << std::endl;
-              for(int m=0; m<Nwaves; ++m)
-              {
-                const real_t xu = (knm[0][n][m] * i * dx + knm[1][n][m] * (j+0.5) * dx + knm[2][n][m] * (k+0.5) * dx) + wnt;
-                u[i][j][k] += Anm[0][n][m]*cos(xu) + Bnm[0][n][m]*sin(xu); 
-                // std::cerr << i << " " << j << " " << k << " x: " << x << std::endl;
-
-                const real_t xv = (knm[0][n][m] * (i+0.5) * dx + knm[1][n][m] * j * dx + knm[2][n][m] * (k+0.5) * dx) + wnt;
-                v[i][j][k] += Anm[1][n][m]*cos(xv) + Bnm[1][n][m]*sin(xv); 
-
-                const real_t xw = (knm[0][n][m] * (i+0.5) * dx + knm[1][n][m] * (j+0.5) * dx + knm[2][n][m] * k * dx) + wnt;
-                w[i][j][k] += Anm[2][n][m]*cos(xw) + Bnm[2][n][m]*sin(xw); 
-              }
-            }
-          }
-    };
+//    // generate velocity field assuming uniform grid size and spacing, Arakawa-C staggering 
+//    // TODO: periodic bcond (velocities at opposite edges are equal)
+//    template<int nx>
+//    void generate_velocity_field_ArakawaC(real_t u[nx+1][nx][nx], real_t v[nx][nx+1][nx], real_t w[nx][nx][nx+1], const real_t &dx, const real_t &t)
+//    {
+//      #pragma omp parallel for
+//      for(int i=0; i<nx; ++i)
+//        for(int j=0; j<nx; ++j)
+//          for(int k=0; k<nx; ++k)
+//          {
+//            u[i][j][k] = 0;
+//            v[i][j][k] = 0;
+//            w[i][j][k] = 0;
+//
+//            for(int n=0; n<Nmodes; ++n)
+//            {
+//              const real_t wnt = wn[n] * t;
+//              //// std::cerr << i << " " << j << " " << k << " wnt: " << wnt << std::endl;
+//              for(int m=0; m<Nwaves; ++m)
+//              {
+//                const real_t xu = (knm[0][n][m] * i * dx + knm[1][n][m] * (j+0.5) * dx + knm[2][n][m] * (k+0.5) * dx) + wnt;
+//                u[i][j][k] += Anm[0][n][m]*cos(xu) + Bnm[0][n][m]*sin(xu); 
+//                // std::cerr << i << " " << j << " " << k << " x: " << x << std::endl;
+//
+//                const real_t xv = (knm[0][n][m] * (i+0.5) * dx + knm[1][n][m] * j * dx + knm[2][n][m] * (k+0.5) * dx) + wnt;
+//                v[i][j][k] += Anm[1][n][m]*cos(xv) + Bnm[1][n][m]*sin(xv); 
+//
+//                const real_t xw = (knm[0][n][m] * (i+0.5) * dx + knm[1][n][m] * (j+0.5) * dx + knm[2][n][m] * k * dx) + wnt;
+//                w[i][j][k] += Anm[2][n][m]*cos(xw) + Bnm[2][n][m]*sin(xw); 
+//              }
+//            }
+//          }
+//    };
 
     template<int nx>
     void generate_velocity_field(real_t u[nx][nx][nx], real_t v[nx][nx][nx], real_t w[nx][nx][nx], const real_t &dx, const real_t &t)
