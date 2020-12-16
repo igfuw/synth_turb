@@ -48,11 +48,17 @@ namespace SynthTurb
       th_d(0, std::nextafter(2 * M_PI, std::numeric_limits<real_t>::max()))  // uniform in [0,2*Pi]
     {
       // Geometric series for the wavenumbers; Eq. A4 in Sidin et al. 2009
+      /*
       const real_t alpha = pow(Lmax / Lmin, 1. / (Nmodes - 1));
       // std::cerr << "alpha: " << alpha << std::endl;
       k[0] = 2. * M_PI / Lmax;
       for(int n=1; n<Nmodes; ++n)
         k[n] = k[0] * pow(alpha, n);
+        */
+
+      // wavenumbers in the form k = n * 2 PI / L, where n=1,2,3,...,Nmodes to get periodic flow 
+      for(int n=0; n<Nmodes; ++n)
+        k[n] = (n+1) * (2. * M_PI / Lmax);
 
 
       // Energy spectrum; first equation in Appendix of Sidin et al. 2009, but without the corrections f_L and f_eta
@@ -96,12 +102,21 @@ namespace SynthTurb
 
         for(int m=0; m<Nwaves; ++m)
         {
-          // generate rand uniform vector
+          // generate rand unit vector
+          /*
           real_t h  = h_d(rand_eng);
           real_t th = th_d(rand_eng);
           e[0] = sqrt(1. - h*h) * cos(th); 
           e[1] = sqrt(1. - h*h) * sin(th); 
           e[2] = h;
+          */
+
+          // generate unit vector along xyz
+          if(Nwaves!=3) throw std::runtime_error("Nwaves needs to be 3 for periodic flow");
+          e[0]=0;
+          e[1]=0;
+          e[2]=0;
+          e[m]=1;
 
   //        // std::cerr << "h: " << h << " th: " << th << std::endl;
     //      // std::cerr << "e=(" << e[0] << "," << e[1] << "," << e[2] << std::endl;
