@@ -71,15 +71,15 @@ namespace SynthTurb
 
 
       // std::cerr << "SynthTurb3d ctor debug output:" << std::endl;
-      for(int n=0; n<Nmodes; ++n)
-      {
-         std::cerr << "n: " << n << " k[n]: " << k[n] << std::endl;
-         std::cerr << "n: " << n << " E[n]: " << E[n] << std::endl;
-         std::cerr << "n: " << n << " dk[n]: " << dk[n] << std::endl;
-         std::cerr << "n: " << n << " var[n]: " << var[n] << std::endl;
-         std::cerr << "n: " << n << " wn[n]: " << wn[n] << std::endl;
-         std::cerr << std::endl;
-      }
+     // for(int n=0; n<Nmodes; ++n)
+     // {
+     //    std::cerr << "n: " << n << " k[n]: " << k[n] << std::endl;
+     //    std::cerr << "n: " << n << " E[n]: " << E[n] << std::endl;
+     //    std::cerr << "n: " << n << " dk[n]: " << dk[n] << std::endl;
+     //    std::cerr << "n: " << n << " var[n]: " << var[n] << std::endl;
+     //    std::cerr << "n: " << n << " wn[n]: " << wn[n] << std::endl;
+     //    std::cerr << std::endl;
+     // }
     }
 
     public:

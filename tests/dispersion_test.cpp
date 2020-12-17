@@ -5,25 +5,27 @@
 #include <iomanip>
 #include <random>
 #include <cmath>
+#include <chrono>
+#include <omp.h>
 
-#define _NMODES 200
-#define _NWAVES 5//50
+//#define _NMODES 200
+//#define _NWAVES 5//50
 
 #define NPairs 1000 // number of test particle pairs
 #define InitSep 1 // initial separation [in units of the Kolmogorov length]
 #define LKol 1e-3 // Kolmogorov length [m]
 #define Lmax 1 // integral length [m]
-#define DT 0.01 // [s]
+#define DT 0.1 // [s]
 #define T 10 // [s]
 #define EPS 1e-2 // TKE diss rate [m2/s3]
 
 
 // TODO: 3 tests: all_waves, periodic_box, GA17
 
-int main()
+template<template<class,int,int> class SynthTurb_t, int NModes, int NWaves>
+void test(const std::string &outfile)
 {
-//  SynthTurb::SynthTurb3d_periodic_box<double, _NMODES, _NWAVES> rm_d(EPS, Lmax, LKol); // eps [m2/s3?], Lmax [m], Lmin[m] (Lmin has no role in the periodic version)
-  SynthTurb::SynthTurb3d_all_waves<double, _NMODES, _NWAVES> rm_d(EPS, Lmax, LKol); // eps [m2/s3?], Lmax [m], Lmin[m] (Lmin has no role in the periodic version)
+  SynthTurb_t<double, NModes, NWaves> rm_d(EPS, Lmax, LKol); // eps [m2/s3?], Lmax [m], Lmin[m] (Lmin has no role in the periodic version)
 
   rm_d.generate_random_modes();
   std::random_device rd;
@@ -33,7 +35,7 @@ int main()
                                          h_d(-1, std::nextafter(1, std::numeric_limits<double>::max())), // uniform in [-1,1]
                                          th_d(0, std::nextafter(2 * M_PI, std::numeric_limits<double>::max()));  // uniform in [0,2*Pi]
                                          
-  std::ofstream ofs ("dispersion_tests.dat", std::ofstream::out);
+  std::ofstream ofs (outfile, std::ofstream::out);
   ofs << "#time\t<r>\tsig(r)" << std::endl;
   ofs << std::setprecision(5) << 0 << "\t" << InitSep*LKol << "\t" << 0 << std::endl;
 
@@ -113,7 +115,41 @@ int main()
     }
     sig_r = sqrt(sig_r / NPairs);
 
-    std::cout << "t: " << t+DT << " <r>: " << mean_r << " sig(r): " << sig_r << std::endl;
+//    std::cout << "t: " << t+DT << " <r>: " << mean_r << " sig(r): " << sig_r << std::endl;
     ofs << std::setprecision(5) << t+DT << "\t" << mean_r << "\t" << sig_r << std::endl;
+  }
+}
+
+int main()
+{
+  std::cout <<
+    "NPairs: " << NPairs <<
+    " InitSep: " << InitSep <<
+    " Lkol: " << LKol <<
+    " Lmax: " << Lmax <<
+    " DT: " << DT <<
+    " T: " << T <<
+    " EPS: " << EPS <<
+    std::endl;
+
+  {
+    constexpr int NModes=1000,
+                  NWaves=3;
+    std::cout << "Starting periodic_box separation test, NModes: " << NModes << " NWaves: " << NWaves << std::endl;
+    auto t1 = std::chrono::high_resolution_clock::now();
+    test<SynthTurb::SynthTurb3d_periodic_box, 1000, 3>("pair_separation_periodic_box.dat");
+    auto t2 = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( t2 - t1 ).count();
+    std::cout << "periodic_box wall time: " << duration << " [ms] OpenMP threads: " << omp_get_max_threads() <<  std::endl;
+  }
+  {
+    constexpr int NModes=200,
+                  NWaves=50;
+    std::cout << "Starting all_waves separation test, NModes: " << NModes << " NWaves: " << NWaves << std::endl;
+    auto t1 = std::chrono::high_resolution_clock::now();
+    test<SynthTurb::SynthTurb3d_all_waves, 1000, 3>("pair_separation_all_waves.dat");
+    auto t2 = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( t2 - t1 ).count();
+    std::cout << "all_waves wall time: " << duration << " [ms] OpenMP threads: " << omp_get_max_threads() <<  std::endl;
   }
 }
