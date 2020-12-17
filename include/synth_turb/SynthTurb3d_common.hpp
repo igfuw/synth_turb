@@ -63,7 +63,7 @@ namespace SynthTurb
 
       // Variances
       for(int n=0; n<Nmodes; ++n)
-        var[n] = sqrt(E[n] * dk[n] / Nwaves);
+        var[n] = E[n] * dk[n] / Nwaves;
 
       // Frequencies; Eq. A7 in Sidin et al. 2009
       for(int n=0; n<Nmodes; ++n)

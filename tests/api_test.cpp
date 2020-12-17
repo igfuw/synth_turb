@@ -7,7 +7,7 @@
 #define DX 1
 #define _NMODES NX
 //#define _NMODES 200
-#define _NWAVES 3
+#define _NWAVES 6//3
 //#define _NWAVES 50
 
 template<template<class, int, int> class SynthTurb_t>

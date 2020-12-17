@@ -19,7 +19,7 @@ namespace SynthTurb
 
     void generate_unit_wavevectors(const int &m) override
     {
-      // generate rand unit vector
+      // generate random unit vector
       real_t h  = this->h_d(this->rand_eng);
       real_t th = this->th_d(this->rand_eng);
       this->e[0] = sqrt(1. - h*h) * cos(th); 
