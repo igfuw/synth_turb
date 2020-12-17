@@ -16,7 +16,7 @@
 #define LKol 1e-3 // Kolmogorov length [m]
 #define Lmax 1 // integral length [m]
 #define DT 0.1 // [s]
-#define T 10 // [s]
+#define T 100 // [s]
 #define EPS 1e-2 // TKE diss rate [m2/s3]
 
 
@@ -37,7 +37,7 @@ void test(const std::string &outfile)
                                          
   std::ofstream ofs (outfile, std::ofstream::out);
   ofs << "#time\t<r>\tsig(r)" << std::endl;
-  ofs << std::setprecision(5) << 0 << "\t" << InitSep*LKol << "\t" << 0 << std::endl;
+  ofs << std::setprecision(5) << std::setw(5) << 0 << "\t" << InitSep*LKol << "\t" << 0 << std::endl;
 
 
 
@@ -116,7 +116,7 @@ void test(const std::string &outfile)
     sig_r = sqrt(sig_r / NPairs);
 
 //    std::cout << "t: " << t+DT << " <r>: " << mean_r << " sig(r): " << sig_r << std::endl;
-    ofs << std::setprecision(5) << t+DT << "\t" << mean_r << "\t" << sig_r << std::endl;
+    ofs << std::setprecision(5) << std::setw(5) << t+DT << "\t" << mean_r << "\t" << sig_r << std::endl;
   }
 }
 
