@@ -161,7 +161,24 @@ namespace SynthTurb
 //    };
 
 
-    void calculate_velocity_field(real_t &u, real_t &v, real_t &w, const real_t x[3], const real_t &t)
+    template <int dim>
+    real_t calculate_velocity_dir(const real_t x[3], const real_t &t)
+    {
+      real_t u = 0;
+
+      for(int n=0; n<Nmodes; ++n)
+      {
+        const real_t wnt = wn[n] * t;
+        for(int m=0; m<Nwaves; ++m)
+        {
+          const real_t r = (knm[0][n][m] * x[0] + knm[1][n][m] * x[1] + knm[2][n][m] * x[2]) + wnt;
+          u += Anm[dim][n][m]*cos(r) + Bnm[dim][n][m]*sin(r); 
+        }
+      }
+      return u;
+    };
+
+    void calculate_velocity(real_t &u, real_t &v, real_t &w, const real_t x[3], const real_t &t)
     {
       {
         u = 0;
@@ -192,7 +209,7 @@ namespace SynthTurb
           for(int k=0; k<nx; ++k)
           {
             const real_t x[3] = {i*dx, j*dx, k*dx};
-            calculate_velocity_field(u[i][j][k], v[i][j][k], w[i][j][k], x, t);
+            calculate_velocity(u[i][j][k], v[i][j][k], w[i][j][k], x, t);
           }
     };
   };

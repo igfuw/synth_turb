@@ -21,8 +21,6 @@
 #define EPS 1e-2 // TKE diss rate [m2/s3]
 
 
-// TODO: 3 tests: all_waves, periodic_box, GA17
-
 class tester_common
 {
   protected:
@@ -129,13 +127,13 @@ class tester_synth_turb : public tester_common
    for(int d=0; d<2; ++d)
    {
      // predictor
-     rm_d.calculate_velocity_field(v[p][d][0][0], v[p][d][0][1], v[p][d][0][2], x[p][d][0], t);
+     rm_d.calculate_velocity(v[p][d][0][0], v[p][d][0][1], v[p][d][0][2], x[p][d][0], t);
      for(int i=0; i<3; ++i)
      {
        x[p][d][1][i] = x[p][d][0][i] + v[p][d][0][i] * DT; 
      }
      // corrector
-     rm_d.calculate_velocity_field(v[p][d][1][0], v[p][d][1][1], v[p][d][1][2], x[p][d][1], t+DT);
+     rm_d.calculate_velocity(v[p][d][1][0], v[p][d][1][1], v[p][d][1][2], x[p][d][1], t+DT);
      for(int i=0; i<3; ++i)
      {
        x[p][d][0][i] += 0.5 * (v[p][d][0][i] + v[p][d][1][i]) * DT; 
