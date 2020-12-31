@@ -41,6 +41,41 @@ namespace SynthTurb
     virtual void generate_wavenumbers(const real_t &Lmax, const real_t &Lmin)=0;
     virtual void generate_unit_wavevectors(const int &m)=0;
 
+    // fills the kn, An and Bn arrays
+    void generate_random_modes()
+    {
+      for(int n=0; n<Nmodes; ++n)
+      {
+        std::normal_distribution<real_t> G_d(0, sqrt(var[n]));
+
+        for(int m=0; m<Nwaves; ++m)
+        {
+          this->generate_unit_wavevectors(m);
+
+          // knm = random vector * magnitude
+          for(int i=0; i<3; ++i)
+            knm[i][n][m] = e[i] * k[n];
+
+          // calculate coefficients Anm and Bnm - see Zhou et al.
+          real_t AA[3];
+          for(int i=0; i<3; ++i)
+            AA[i] = G_d(rand_eng);
+
+          Anm[0][n][m] = AA[1] * e[2] - AA[2] * e[1];
+          Anm[1][n][m] = AA[2] * e[0] - AA[0] * e[2];
+          Anm[2][n][m] = AA[0] * e[1] - AA[1] * e[0];
+
+          real_t BB[3];
+          for(int i=0; i<3; ++i)
+            BB[i] = G_d(rand_eng);
+
+          Bnm[0][n][m] = BB[1] * e[2] - BB[2] * e[1];
+          Bnm[1][n][m] = BB[2] * e[0] - BB[0] * e[2];
+          Bnm[2][n][m] = BB[0] * e[1] - BB[1] * e[0];
+        }
+      }
+    }
+
     // init, can't be in the constructor because it calls virtual functions
     void init(
       const real_t &eps,        // TKE dissipation rate [m2/s3]
@@ -80,6 +115,8 @@ namespace SynthTurb
      //    std::cerr << "n: " << n << " wn[n]: " << wn[n] << std::endl;
      //    std::cerr << std::endl;
      // }
+
+      generate_random_modes();
     }
 
     public:
@@ -91,40 +128,6 @@ namespace SynthTurb
       th_d(0, std::nextafter(2 * M_PI, std::numeric_limits<real_t>::max()))  // uniform in [0,2*Pi]
       {}
 
-    // fills the kn, An and Bn arrays
-    void generate_random_modes()
-    {
-      for(int n=0; n<Nmodes; ++n)
-      {
-        std::normal_distribution<real_t> G_d(0, sqrt(var[n]));
-
-        for(int m=0; m<Nwaves; ++m)
-        {
-          this->generate_unit_wavevectors(m);
-
-          // knm = random vector * magnitude
-          for(int i=0; i<3; ++i)
-            knm[i][n][m] = e[i] * k[n];
-
-          // calculate coefficients Anm and Bnm - see Zhou et al.
-          real_t AA[3];
-          for(int i=0; i<3; ++i)
-            AA[i] = G_d(rand_eng);
-
-          Anm[0][n][m] = AA[1] * e[2] - AA[2] * e[1];
-          Anm[1][n][m] = AA[2] * e[0] - AA[0] * e[2];
-          Anm[2][n][m] = AA[0] * e[1] - AA[1] * e[0];
-
-          real_t BB[3];
-          for(int i=0; i<3; ++i)
-            BB[i] = G_d(rand_eng);
-
-          Bnm[0][n][m] = BB[1] * e[2] - BB[2] * e[1];
-          Bnm[1][n][m] = BB[2] * e[0] - BB[0] * e[2];
-          Bnm[2][n][m] = BB[0] * e[1] - BB[1] * e[0];
-        }
-      }
-    }
 
 //    // generate velocity field assuming uniform grid size and spacing, Arakawa-C staggering 
 //    // TODO: periodic bcond (velocities at opposite edges are equal)
