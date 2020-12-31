@@ -21,7 +21,7 @@ namespace SynthTurb
     void generate_unit_wavevectors(const int &wave_idx) override
     {
       // generate unit vector 
-      if(Nwaves!=6) throw std::runtime_error("Nwaves needs to be 6 for periodic flow");
+      if(Nwaves!=6) throw std::runtime_error("Nwaves needs to be 6 in the non-multiwave periodic box");
    //   if(mode_idx == 0)
    //   {
         this->e[0]=0;

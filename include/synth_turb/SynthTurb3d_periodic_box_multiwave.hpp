@@ -45,6 +45,8 @@ namespace SynthTurb
            std_dev[Nmodes], // sqrt(variances)
            wn[Nmodes];   // frequencies 
 
+    real_t time;
+
     int Nwaves[Nmodes]; // actual number of wave vectors in thath mode
 
 
@@ -60,6 +62,35 @@ namespace SynthTurb
 
     real_t k[Nmodes];   // norms of wave vectors
 
+    void update_time(const real_t &totime)
+    {
+      if(totime <= time)
+        throw std::runtime_error("time cannot go back (or stand still!)");
+
+      const real_t dt = totime - time;
+
+      #pragma omp parallel for
+      for(int n=0; n<Nmodes; ++n)
+      {
+        std::normal_distribution<real_t> normal_d(0,1);
+        std::default_random_engine local_rand_eng(std::random_device{}());
+        real_t relax = exp(-wn[n] * dt);
+
+        for(int m=0; m<Nwaves[n]; m+=2)
+        {
+          for(int i=0; i<3; ++i)
+          {
+            Anm[i][n][m] = relax * Anm[i][n][m] + std_dev[n] * sqrt(1. - relax * relax) * normal_d(local_rand_eng);
+            Anm[i][n][m+1] = -Anm[i][n][m];
+
+            Bnm[i][n][m] = relax * Bnm[i][n][m] + std_dev[n] * sqrt(1. - relax * relax) * normal_d(local_rand_eng);
+            Bnm[i][n][m+1] = Bnm[i][n][m];
+          }
+        }
+      }
+      time = totime;
+    };
+
     public:
  
     // ctor
@@ -67,7 +98,7 @@ namespace SynthTurb
       const real_t &eps,        // TKE dissipation rate [m2/s3]
       const real_t &Lmax = 100, // maximum length scale [m]
       const real_t &Lmin = 1e-3 // Kolmogorov length scale [m]
-    )
+    ) : time(0)
     {
       if(Nwaves_max % 2 != 0) throw std::runtime_error("Nwaves_max needs to be even, because we need to include opposites of all wavevectors.");
 
@@ -168,15 +199,9 @@ namespace SynthTurb
      //    std::cerr << "n: " << n << " wn[n]: " << wn[n] << std::endl;
      //    std::cerr << std::endl;
      // }
-    }
 
-    // fills the kn, An and Bn arrays
-    void generate_random_modes()
-    {
       for(int n=0; n<Nmodes; ++n)
       {
-        std::normal_distribution<real_t> G_d(0, std_dev[n]);
-
         for(int m=0; m<Nwaves[n]; ++m)
         {
           // knm = unit vector * magnitude
@@ -192,29 +217,6 @@ namespace SynthTurb
         }
       }
     }
-
-    void update_time(const real_t &dt)
-    {
-      #pragma omp parallel for
-      for(int n=0; n<Nmodes; ++n)
-      {
-        std::normal_distribution<real_t> normal_d(0,1);
-        std::default_random_engine local_rand_eng(std::random_device{}());
-        real_t relax = exp(-wn[n] * dt);
-
-        for(int m=0; m<Nwaves[n]; m+=2)
-        {
-          for(int i=0; i<3; ++i)
-          {
-            Anm[i][n][m] = relax * Anm[i][n][m] + std_dev[n] * sqrt(1. - relax * relax) * normal_d(local_rand_eng);
-            Anm[i][n][m+1] = -Anm[i][n][m];
-
-            Bnm[i][n][m] = relax * Bnm[i][n][m] + std_dev[n] * sqrt(1. - relax * relax) * normal_d(local_rand_eng);
-            Bnm[i][n][m+1] = Bnm[i][n][m];
-          }
-        }
-      }
-    };
 
     template <int dim>
     real_t calculate_velocity_dir(const real_t x[3])
@@ -259,8 +261,10 @@ namespace SynthTurb
     };
 
     template<int nx>
-    void generate_velocity_field(real_t u[nx][nx][nx], real_t v[nx][nx][nx], real_t w[nx][nx][nx], const real_t &dx)
+    void generate_velocity_field(real_t u[nx][nx][nx], real_t v[nx][nx][nx], real_t w[nx][nx][nx], const real_t &dx, const real_t &t)
     {
+      update_time(t);
+
       #pragma omp parallel for
       for(int i=0; i<nx; ++i)
         for(int j=0; j<nx; ++j)
