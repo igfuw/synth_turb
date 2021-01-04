@@ -191,8 +191,26 @@ class tester_synth_turb : public tester_synth_turb_common<SynthTurb_t, NModes, N
     this->st.calculate_velocity(this->v[p][d][n][0], this->v[p][d][n][1], this->v[p][d][n][2], this->x[p][d][n], t);
   }
 
-  void update_time(const double &dt) override
+  void update_time(const double &t) override
   {}
+};
+
+
+template<template<class,int,int> class SynthTurb_t, int NModes, int NWaves>
+class tester_synth_turb_multiwave : public tester_synth_turb_common<SynthTurb_t, NModes, NWaves>
+{
+  using parent_t = tester_synth_turb_common<SynthTurb_t, NModes, NWaves>;
+  using parent_t::parent_t;
+
+  void calculate_velocity(const int &p, const int &d, const int &n, const double &t) override
+  {
+    this->st.calculate_velocity(this->v[p][d][n][0], this->v[p][d][n][1], this->v[p][d][n][2], this->x[p][d][n]);
+  }
+
+  void update_time(const double &t) override
+  {
+    this->st.update_time(t);
+  }
 };
 
 
@@ -258,6 +276,13 @@ int main()
                   NWaves=6;
     tester_synth_turb<SynthTurb::SynthTurb3d_periodic_box, NModes, NWaves> periodic_box("pair_separation_periodic_box.dat");
     periodic_box.test();
+  }
+  // synth turb with periodic box flow with more waves
+  {
+    constexpr int NModes=200,
+                  NWaves=50;
+    tester_synth_turb_multiwave<SynthTurb::SynthTurb3d_periodic_box_multiwave, NModes, NWaves> periodic_box_multiwave("pair_separation_periodic_box_multiwave.dat");
+    periodic_box_multiwave.test();
   }
   // synth turb with all waves
   {

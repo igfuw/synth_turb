@@ -62,6 +62,9 @@ namespace SynthTurb
 
     real_t k[Nmodes];   // norms of wave vectors
 
+
+    public:
+
     void update_time(const real_t &totime)
     {
       if(totime <= time)
@@ -90,8 +93,6 @@ namespace SynthTurb
       }
       time = totime;
     };
-
-    public:
  
     // ctor
     SynthTurb3d_periodic_box_multiwave(
