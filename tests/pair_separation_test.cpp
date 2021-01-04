@@ -13,7 +13,7 @@
 //#define _NMODES 200
 //#define _NWAVES 5//50
 
-#define NPairs 100 // 1000 // number of test particle pairs
+#define NPairs 10 // 1000 // number of test particle pairs
 #define InitSep 1 // initial separation [in units of the Kolmogorov length]
 #define LKol 1e-3 // Kolmogorov length [m]
 #define Lmax 1 // integral length [m]
@@ -54,7 +54,6 @@ class tester_common
     th_d(0, std::nextafter(2 * M_PI, std::numeric_limits<double>::max())),
     ofs(outfile, std::ofstream::out)
   {
-
     ofs << "#time\t<r>\tsig(r)" << std::endl;
     ofs << std::setprecision(5) << std::setw(5) << 0 << "\t" << InitSep*LKol << "\t" << 0 << std::endl;
 
@@ -79,6 +78,7 @@ class tester_common
 
   void test()
   {
+    auto t1 = std::chrono::high_resolution_clock::now();
     // time loop
     //  const int n_step = T / DT;
     double t=0;
@@ -127,6 +127,9 @@ class tester_common
   //    std::cout << "t: " << t+DT << " <r>: " << mean_r << " sig(r): " << sig_r << std::endl;
       ofs << std::setprecision(5) << std::setw(5) << t+DT << "\t" << mean_r << "\t" << sig_r << std::endl;
     }
+    auto t2 = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( t2 - t1 ).count();
+    std::cout << "wall time: " << duration << " [ms] OpenMP threads: " << omp_get_max_threads() <<  std::endl;
   }
 };
 
@@ -172,7 +175,9 @@ class tester_synth_turb_common : public tester_common
   tester_synth_turb_common(const std::string &outfile):
     parent_t(outfile),
     st(EPS, Lmax, LKol)
-  {}
+  {
+    std::cout << outfile << " test, NModes: " << NModes << " NWaves: " << NWaves << std::endl;
+  }
 };
 
 template<template<class,int,int> class SynthTurb_t, int NModes, int NWaves>
@@ -230,7 +235,9 @@ class tester_rand_turb : public tester_common
   tester_rand_turb(const std::string &outfile):
     parent_t(outfile),
     rt(EPS, Lmax)
-  {}
+  {
+    std::cout << "rand_turb test" << std::endl;
+  }
 };
 
 int main()
@@ -249,34 +256,19 @@ int main()
   {
     constexpr int NModes=1000,
                   NWaves=6;
-    std::cout << "Starting periodic_box separation test, NModes: " << NModes << " NWaves: " << NWaves << std::endl;
-    auto t1 = std::chrono::high_resolution_clock::now();
     tester_synth_turb<SynthTurb::SynthTurb3d_periodic_box, NModes, NWaves> periodic_box("pair_separation_periodic_box.dat");
     periodic_box.test();
-    auto t2 = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( t2 - t1 ).count();
-    std::cout << "periodic_box wall time: " << duration << " [ms] OpenMP threads: " << omp_get_max_threads() <<  std::endl;
   }
   // synth turb with all waves
-//  {
-//    constexpr int NModes=200,
-//                  NWaves=50;
-//    std::cout << "Starting all_waves separation test, NModes: " << NModes << " NWaves: " << NWaves << std::endl;
-//    auto t1 = std::chrono::high_resolution_clock::now();
-//    tester_synth_turb<SynthTurb::SynthTurb3d_all_waves, NModes, NWaves> all_waves("pair_separation_all_waves.dat");
-//    all_waves.test();
-//    auto t2 = std::chrono::high_resolution_clock::now();
-//    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( t2 - t1 ).count();
-//    std::cout << "all_waves wall time: " << duration << " [ms] OpenMP threads: " << omp_get_max_threads() <<  std::endl;
-//  }
-  // GA17 SGS model
-//  {
-//    std::cout << "Starting GA17 separation test" << std::endl;
-//    auto t1 = std::chrono::high_resolution_clock::now();
-//    tester_rand_turb<RandTurb::RandTurb_GA17> GA17("pair_separation_GA17.dat");
-//    GA17.test();
-//    auto t2 = std::chrono::high_resolution_clock::now();
-//    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( t2 - t1 ).count();
-//    std::cout << "GA17 wall time: " << duration << " [ms] OpenMP threads: " << omp_get_max_threads() <<  std::endl;
-//  }
+  {
+    constexpr int NModes=200,
+                  NWaves=50;
+    tester_synth_turb<SynthTurb::SynthTurb3d_all_waves, NModes, NWaves> all_waves("pair_separation_all_waves.dat");
+    all_waves.test();
+  }
+// GA17 SGS model
+  {
+    tester_rand_turb<RandTurb::RandTurb_GA17> GA17("pair_separation_GA17.dat");
+    GA17.test();
+  }
 }
