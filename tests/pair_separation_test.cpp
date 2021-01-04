@@ -1,6 +1,7 @@
 #include <synth_turb/SynthTurb3d_periodic_box.hpp>
 #include <synth_turb/SynthTurb3d_all_waves.hpp>
 #include <synth_turb/RandTurbGA17.hpp>
+#include <synth_turb/SynthTurb3d_periodic_box_multiwave.hpp>
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -12,13 +13,13 @@
 //#define _NMODES 200
 //#define _NWAVES 5//50
 
-#define NPairs 1000 // number of test particle pairs
+#define NPairs 100 // 1000 // number of test particle pairs
 #define InitSep 1 // initial separation [in units of the Kolmogorov length]
 #define LKol 1e-3 // Kolmogorov length [m]
 #define Lmax 1 // integral length [m]
 #define DT 0.1 // [s]
 #define T 100 // [s]
-#define EPS 1e-2 // TKE diss rate [m2/s3]
+#define EPS 1e-1 // TKE diss rate [m2/s3]
 
 
 class tester_common
@@ -40,7 +41,9 @@ class tester_common
 
   double mean_r, sig_r;
 
-  virtual void update_positions(const int&, const double&)=0;
+  virtual void predictor(const int&, const double&)=0;
+  virtual void corrector(const int&, const double&)=0;
+  virtual void update_time(const double&)=0;
 
   public:
   //ctor
@@ -78,13 +81,23 @@ class tester_common
   {
     // time loop
     //  const int n_step = T / DT;
-    for(double t=0; t<=T; t+=DT)
+    double t=0;
+    while(t<=T)
     {
-      // update positions
       #pragma omp parallel for
       for(int p=0; p<NPairs; ++p)
       {
-        this->update_positions(p, t);
+        this->predictor(p, t);
+      }
+
+      t+=DT;
+
+      this->update_time(t);
+
+      #pragma omp parallel for
+      for(int p=0; p<NPairs; ++p)
+      {
+        this->corrector(p, t);
         // calculate separation
         r[p] = sqrt(
           (x[p][1][0][0] - x[p][0][0][0]) * (x[p][1][0][0] - x[p][0][0][0]) + 
@@ -118,40 +131,63 @@ class tester_common
 };
 
 template<template<class,int,int> class SynthTurb_t, int NModes, int NWaves>
-class tester_synth_turb : public tester_common
+class tester_synth_turb_common : public tester_common
 {
   using parent_t = tester_common;
 
-  void update_positions(const int &p, const double &t) override
+  virtual void calculate_velocity(const int &p, const int &d, const int &n, const double &t)=0;
+
+  void predictor(const int &p, const double &t) override
   {
-   for(int d=0; d<2; ++d)
-   {
-     // predictor
-     rm_d.calculate_velocity(v[p][d][0][0], v[p][d][0][1], v[p][d][0][2], x[p][d][0], t);
-     for(int i=0; i<3; ++i)
-     {
-       x[p][d][1][i] = x[p][d][0][i] + v[p][d][0][i] * DT; 
-     }
-     // corrector
-     rm_d.calculate_velocity(v[p][d][1][0], v[p][d][1][1], v[p][d][1][2], x[p][d][1], t+DT);
-     for(int i=0; i<3; ++i)
-     {
-       x[p][d][0][i] += 0.5 * (v[p][d][0][i] + v[p][d][1][i]) * DT; 
-     }
-   }
+    for(int d=0; d<2; ++d)
+    {
+      // predictor
+      this->calculate_velocity(p,d,0,t); // st.calculate_velocity(v[p][d][0][0], v[p][d][0][1], v[p][d][0][2], x[p][d][0]);
+      for(int i=0; i<3; ++i)
+      {
+        x[p][d][1][i] = x[p][d][0][i] + v[p][d][0][i] * DT; 
+      }
+    }
   }
 
-  private:
-  SynthTurb_t<double, NModes, NWaves> rm_d;//(EPS, Lmax, LKol); // eps [m2/s3?], Lmax [m], Lmin[m] (Lmin has no role in the periodic version)
+  void corrector(const int &p, const double &t) override
+  {
+    for(int d=0; d<2; ++d)
+    {
+      // corrector
+      this->calculate_velocity(p,d,1,t); // st.calculate_velocity(v[p][d][1][0], v[p][d][1][1], v[p][d][1][2], x[p][d][1]);
+      for(int i=0; i<3; ++i)
+      {
+        x[p][d][0][i] += 0.5 * (v[p][d][0][i] + v[p][d][1][i]) * DT; 
+      }
+    }
+  }
+
+  protected:
+
+  SynthTurb_t<double, NModes, NWaves> st;//(EPS, Lmax, LKol); // eps [m2/s3?], Lmax [m], Lmin[m] (Lmin has no role in the periodic version)
 
   public:
   //ctor
-  tester_synth_turb(const std::string &outfile):
+  tester_synth_turb_common(const std::string &outfile):
     parent_t(outfile),
-    rm_d(EPS, Lmax, LKol)
+    st(EPS, Lmax, LKol)
+  {}
+};
+
+template<template<class,int,int> class SynthTurb_t, int NModes, int NWaves>
+class tester_synth_turb : public tester_synth_turb_common<SynthTurb_t, NModes, NWaves>
+{
+  using parent_t = tester_synth_turb_common<SynthTurb_t, NModes, NWaves>;
+  using parent_t::parent_t;
+
+  void calculate_velocity(const int &p, const int &d, const int &n, const double &t) override
   {
-    rm_d.generate_random_modes();
+    this->st.calculate_velocity(this->v[p][d][n][0], this->v[p][d][n][1], this->v[p][d][n][2], this->x[p][d][n], t);
   }
+
+  void update_time(const double &dt) override
+  {}
 };
 
 
@@ -160,31 +196,40 @@ class tester_rand_turb : public tester_common
 {
   using parent_t = tester_common;
 
-  void update_positions(const int &p, const double &t) override
+  void predictor(const int &p, const double &t) override
   {
-   for(int d=0; d<2; ++d)
-   {
-     // predictor
-     for(int i=0; i<3; ++i)
-       rm_d.update_sgs_velocity(v[p][d][0][i], DT);
-     // corrector
-     for(int i=0; i<3; ++i)
-     {
-       v[p][d][1][i] = v[p][d][0][i];
-       rm_d.update_sgs_velocity(v[p][d][1][i], DT);
-       x[p][d][0][i] += 0.5 * (v[p][d][0][i] + v[p][d][1][i]) * DT; 
-     }
-   }
+    for(int d=0; d<2; ++d)
+    {
+      for(int i=0; i<3; ++i)
+        rt.update_sgs_velocity(v[p][d][0][i], DT);
+    }
   }
 
+  void corrector(const int &p, const double &t) override
+  {
+    for(int d=0; d<2; ++d)
+    {
+      for(int i=0; i<3; ++i)
+      {
+        v[p][d][1][i] = v[p][d][0][i];
+        rt.update_sgs_velocity(v[p][d][1][i], DT);
+        v[p][d][0][i] = 0.5 * (v[p][d][0][i] + v[p][d][1][i]);
+        x[p][d][0][i] += v[p][d][0][i] * DT; 
+      }
+    }
+  }
+
+  void update_time(const double &dt) override
+  {}
+
   private:
-  RandTurb_t<double> rm_d;
+  RandTurb_t<double> rt;
 
   public:
   //ctor
   tester_rand_turb(const std::string &outfile):
     parent_t(outfile),
-    rm_d(EPS, Lmax)
+    rt(EPS, Lmax)
   {}
 };
 
@@ -213,25 +258,25 @@ int main()
     std::cout << "periodic_box wall time: " << duration << " [ms] OpenMP threads: " << omp_get_max_threads() <<  std::endl;
   }
   // synth turb with all waves
-  {
-    constexpr int NModes=200,
-                  NWaves=50;
-    std::cout << "Starting all_waves separation test, NModes: " << NModes << " NWaves: " << NWaves << std::endl;
-    auto t1 = std::chrono::high_resolution_clock::now();
-    tester_synth_turb<SynthTurb::SynthTurb3d_all_waves, NModes, NWaves> all_waves("pair_separation_all_waves.dat");
-    all_waves.test();
-    auto t2 = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( t2 - t1 ).count();
-    std::cout << "all_waves wall time: " << duration << " [ms] OpenMP threads: " << omp_get_max_threads() <<  std::endl;
-  }
+//  {
+//    constexpr int NModes=200,
+//                  NWaves=50;
+//    std::cout << "Starting all_waves separation test, NModes: " << NModes << " NWaves: " << NWaves << std::endl;
+//    auto t1 = std::chrono::high_resolution_clock::now();
+//    tester_synth_turb<SynthTurb::SynthTurb3d_all_waves, NModes, NWaves> all_waves("pair_separation_all_waves.dat");
+//    all_waves.test();
+//    auto t2 = std::chrono::high_resolution_clock::now();
+//    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( t2 - t1 ).count();
+//    std::cout << "all_waves wall time: " << duration << " [ms] OpenMP threads: " << omp_get_max_threads() <<  std::endl;
+//  }
   // GA17 SGS model
-  {
-    std::cout << "Starting GA17 separation test" << std::endl;
-    auto t1 = std::chrono::high_resolution_clock::now();
-    tester_rand_turb<RandTurb::RandTurb_GA17> GA17("pair_separation_GA17.dat");
-    GA17.test();
-    auto t2 = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( t2 - t1 ).count();
-    std::cout << "GA17 wall time: " << duration << " [ms] OpenMP threads: " << omp_get_max_threads() <<  std::endl;
-  }
+//  {
+//    std::cout << "Starting GA17 separation test" << std::endl;
+//    auto t1 = std::chrono::high_resolution_clock::now();
+//    tester_rand_turb<RandTurb::RandTurb_GA17> GA17("pair_separation_GA17.dat");
+//    GA17.test();
+//    auto t2 = std::chrono::high_resolution_clock::now();
+//    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( t2 - t1 ).count();
+//    std::cout << "GA17 wall time: " << duration << " [ms] OpenMP threads: " << omp_get_max_threads() <<  std::endl;
+//  }
 }

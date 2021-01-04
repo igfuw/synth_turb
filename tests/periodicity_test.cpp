@@ -4,6 +4,7 @@
 #include <iostream>
 #include <chrono>
 #include <cassert>
+#include <omp.h>
 
 #define NX 60
 #define DX 1
