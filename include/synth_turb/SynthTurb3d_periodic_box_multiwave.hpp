@@ -84,9 +84,11 @@ namespace SynthTurb
           for(int i=0; i<3; ++i)
           {
             Anm[i][n][m] = relax * Anm[i][n][m] + std_dev[n] * sqrt(1. - relax * relax) * normal_d(local_rand_eng);
+  //          Anm[i][n][m+1] = relax * Anm[i][n][m+1] + std_dev[n] * sqrt(1. - relax * relax) * normal_d(local_rand_eng);
             Anm[i][n][m+1] = -Anm[i][n][m];
 
             Bnm[i][n][m] = relax * Bnm[i][n][m] + std_dev[n] * sqrt(1. - relax * relax) * normal_d(local_rand_eng);
+//            Bnm[i][n][m+1] = relax * Bnm[i][n][m+1] + std_dev[n] * sqrt(1. - relax * relax) * normal_d(local_rand_eng);
             Bnm[i][n][m+1] = Bnm[i][n][m];
           }
         }
@@ -106,42 +108,44 @@ namespace SynthTurb
       // nn = nx^2 + ny^2 + nz^2 
 
       // --- linear distribution of nn (nn = 1, 2, 3, 4, ..., Nmodes) ---
-   //   for(int n=0; n<Nmodes; ++n)
-     //   k[n] = sqrt(n+1) * (2. * M_PI / Lmax);
-
+      {
+        for(int n=0; n<Nmodes; ++n)
+          nn[n] = n+1;
+      }
       // --- geometric distribution of nn ---
-      if(Nmodes > Lmax / Lmin)
-        throw std::runtime_error("too many modes: Nmodes is greater than Lmax / Lmin");
-
-      k[0] = 2. * M_PI / Lmax;
-      nn[0]=1;
-
-      real_t alpha = pow(Lmax / Lmin, 1. / (Nmodes - 1));
-      while(1)
       {
-        for(int n=1; n<Nmodes; ++n)
-        {
-          nn[n] = -1;
-          int exponent = n;
-          while(nn[n] <= nn[n-1])
-          {
-            nn[n] = std::round(std::pow(alpha, exponent++));
-          }
-//          std::cerr << "alpha: " << alpha << " nn[" << n << "]: " << nn[n] << std::endl;
-          if(nn[n] > Lmax / Lmin) break;
-        }
-        if(nn[Nmodes-1] <= Lmax / Lmin && nn[Nmodes-1]!=0)
-          break;
-        else
-          alpha /= 1.001;
+//        if(Nmodes > Lmax / Lmin)
+//          throw std::runtime_error("too many modes: Nmodes is greater than Lmax / Lmin");
+//  
+//        nn[0]=1;
+//  
+//        real_t alpha = pow(Lmax / Lmin, 1. / (Nmodes - 1));
+//        while(1)
+//        {
+//          for(int n=1; n<Nmodes; ++n)
+//          {
+//            nn[n] = -1;
+//            int exponent = n;
+//            while(nn[n] <= nn[n-1])
+//            {
+//              nn[n] = std::round(std::pow(alpha, exponent++));
+//            }
+//  //          std::cerr << "alpha: " << alpha << " nn[" << n << "]: " << nn[n] << std::endl;
+//            if(nn[n] > Lmax / Lmin) break;
+//          }
+//          if(nn[Nmodes-1] <= Lmax / Lmin && nn[Nmodes-1]!=0)
+//            break;
+//          else
+//            alpha /= 1.001;
+//        }
       }
 
-      for(int n=1; n<Nmodes; ++n)
+      for(int n=0; n<Nmodes; ++n)
       {
-  //      std::cerr << "nn[" << n << "]: " << nn[n] << std::endl;
-        k[n] = k[0] * sqrt(real_t(nn[n]));
+        std::cerr << "nn[" << n << "]: " << nn[n] << std::endl;
+        k[n] = sqrt(real_t(nn[n])) * (2. * M_PI / Lmax);
+      //  k[n] = sqrt(nn[n]) * (2. * M_PI / Lmax);
       }
-
 
       std::vector<std::array<int,3>> vectors;
       for(int n=0; n<Nmodes; ++n)
@@ -154,8 +158,8 @@ namespace SynthTurb
           std::shuffle(std::begin(vectors), std::end(vectors), local_rand_eng);
           Nwaves[n] = Nwaves_max;
         }
-      //  if(Nwaves_max != 6) throw std::runtime_error("nwaves max needs to be 6 for this test");
-      //  vectors = {{1,0,0},{0,1,0},{0,0,1}};
+//        if(Nwaves_max != 6) throw std::runtime_error("nwaves max needs to be 6 for this test");
+//        vectors = {{1,0,0},{0,1,0},{0,0,1}};
 
         for(int m=0; m<Nwaves[n]; m+=2)
         {

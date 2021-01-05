@@ -13,7 +13,7 @@
 //#define _NMODES 200
 //#define _NWAVES 5//50
 
-#define NPairs 10 // 1000 // number of test particle pairs
+#define NPairs 100 // 1000 // number of test particle pairs
 #define InitSep 1 // initial separation [in units of the Kolmogorov length]
 #define LKol 1e-3 // Kolmogorov length [m]
 #define Lmax 1 // integral length [m]
@@ -145,7 +145,7 @@ class tester_synth_turb_common : public tester_common
     for(int d=0; d<2; ++d)
     {
       // predictor
-      this->calculate_velocity(p,d,0,t); // st.calculate_velocity(v[p][d][0][0], v[p][d][0][1], v[p][d][0][2], x[p][d][0]);
+      this->calculate_velocity(p,d,0,t); 
       for(int i=0; i<3; ++i)
       {
         x[p][d][1][i] = x[p][d][0][i] + v[p][d][0][i] * DT; 
@@ -158,7 +158,7 @@ class tester_synth_turb_common : public tester_common
     for(int d=0; d<2; ++d)
     {
       // corrector
-      this->calculate_velocity(p,d,1,t); // st.calculate_velocity(v[p][d][1][0], v[p][d][1][1], v[p][d][1][2], x[p][d][1]);
+      this->calculate_velocity(p,d,1,t);
       for(int i=0; i<3; ++i)
       {
         x[p][d][0][i] += 0.5 * (v[p][d][0][i] + v[p][d][1][i]) * DT; 
@@ -271,29 +271,29 @@ int main()
     std::endl;
 
   // synth turb with periodic box flow
+//  {
+//    constexpr int NModes=1000,
+//                  NWaves=6;
+//    tester_synth_turb<SynthTurb::SynthTurb3d_periodic_box, NModes, NWaves> periodic_box("pair_separation_periodic_box.dat");
+//    periodic_box.test();
+//  }
+//  // synth turb with periodic box flow with more waves
   {
-    constexpr int NModes=1000,
-                  NWaves=6;
-    tester_synth_turb<SynthTurb::SynthTurb3d_periodic_box, NModes, NWaves> periodic_box("pair_separation_periodic_box.dat");
-    periodic_box.test();
-  }
-  // synth turb with periodic box flow with more waves
-  {
-    constexpr int NModes=200,
+    constexpr int NModes=1000,//200,
                   NWaves=50;
     tester_synth_turb_multiwave<SynthTurb::SynthTurb3d_periodic_box_multiwave, NModes, NWaves> periodic_box_multiwave("pair_separation_periodic_box_multiwave.dat");
     periodic_box_multiwave.test();
   }
-  // synth turb with all waves
-  {
-    constexpr int NModes=200,
-                  NWaves=50;
-    tester_synth_turb<SynthTurb::SynthTurb3d_all_waves, NModes, NWaves> all_waves("pair_separation_all_waves.dat");
-    all_waves.test();
-  }
-// GA17 SGS model
-  {
-    tester_rand_turb<RandTurb::RandTurb_GA17> GA17("pair_separation_GA17.dat");
-    GA17.test();
-  }
+//  // synth turb with all waves
+//  {
+//    constexpr int NModes=200,//200,
+//                  NWaves=50;//50;
+//    tester_synth_turb<SynthTurb::SynthTurb3d_all_waves, NModes, NWaves> all_waves("pair_separation_all_waves.dat");
+//    all_waves.test();
+//  }
+//  // GA17 SGS model
+//  {
+//    tester_rand_turb<RandTurb::RandTurb_GA17> GA17("pair_separation_GA17.dat");
+//    GA17.test();
+//  }
 }
