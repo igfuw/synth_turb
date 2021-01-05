@@ -108,36 +108,39 @@ namespace SynthTurb
       // nn = nx^2 + ny^2 + nz^2 
 
       // --- linear distribution of nn (nn = 1, 2, 3, 4, ..., Nmodes) ---
+      /*
       {
         for(int n=0; n<Nmodes; ++n)
           nn[n] = n+1;
       }
+      */
       // --- geometric distribution of nn ---
       {
-//        if(Nmodes > Lmax / Lmin)
-//          throw std::runtime_error("too many modes: Nmodes is greater than Lmax / Lmin");
-//  
-//        nn[0]=1;
-//  
-//        real_t alpha = pow(Lmax / Lmin, 1. / (Nmodes - 1));
-//        while(1)
-//        {
-//          for(int n=1; n<Nmodes; ++n)
-//          {
-//            nn[n] = -1;
-//            int exponent = n;
-//            while(nn[n] <= nn[n-1])
-//            {
-//              nn[n] = std::round(std::pow(alpha, exponent++));
-//            }
-//  //          std::cerr << "alpha: " << alpha << " nn[" << n << "]: " << nn[n] << std::endl;
-//            if(nn[n] > Lmax / Lmin) break;
-//          }
-//          if(nn[Nmodes-1] <= Lmax / Lmin && nn[Nmodes-1]!=0)
-//            break;
-//          else
-//            alpha /= 1.001;
-//        }
+        if(Nmodes > Lmax / Lmin)
+          throw std::runtime_error("too many modes: Nmodes is greater than Lmax / Lmin");
+  
+        nn[0]=1;
+  
+        real_t alpha = pow(Lmax / Lmin, 1. / (Nmodes - 1));
+        while(1)
+        {
+          for(int n=1; n<Nmodes; ++n)
+          {
+            nn[n] = -1;
+            int exponent = n;
+            while(nn[n] <= nn[n-1])
+            {
+              nn[n] = std::round(std::pow(alpha, exponent++));
+            }
+  //          std::cerr << "alpha: " << alpha << " nn[" << n << "]: " << nn[n] << std::endl;
+            if(nn[n] > Lmax / Lmin) break;
+          }
+          if(nn[Nmodes-1] <= Lmax / Lmin && nn[Nmodes-1]!=0)
+            break;
+          else
+            alpha /= 1.001;
+        }
+        assert(nn[Nmodes-1] > 0);
       }
 
       for(int n=0; n<Nmodes; ++n)
@@ -205,8 +208,11 @@ namespace SynthTurb
      //    std::cerr << std::endl;
      // }
 
+      std::default_random_engine local_rand_eng(std::random_device{}());
       for(int n=0; n<Nmodes; ++n)
       {
+        std::normal_distribution<real_t> G_d(0, std_dev[n]);
+
         for(int m=0; m<Nwaves[n]; ++m)
         {
           // knm = unit vector * magnitude
@@ -214,10 +220,18 @@ namespace SynthTurb
             knm[i][n][m] = enm[i][n][m] * k[n];
 
           // init random coefficients
+          /*
           for(int i=0; i<3; ++i)
           {
             Anm[i][n][m] = 0;
             Bnm[i][n][m] = 0;
+          }
+*/
+
+          for(int i=0; i<3; ++i)
+          {
+            Anm[i][n][m] = G_d(local_rand_eng);
+            Bnm[i][n][m] = G_d(local_rand_eng);
           }
         }
       }
@@ -249,6 +263,7 @@ namespace SynthTurb
 
       for(int n=0; n<Nmodes; ++n)
       {
+
         //// std::cerr << i << " " << j << " " << k << " wnt: " << wnt << std::endl;
         for(int m=0; m<Nwaves[n]; ++m)
         {

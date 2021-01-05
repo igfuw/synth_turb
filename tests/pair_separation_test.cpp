@@ -277,9 +277,9 @@ int main()
 //    tester_synth_turb<SynthTurb::SynthTurb3d_periodic_box, NModes, NWaves> periodic_box("pair_separation_periodic_box.dat");
 //    periodic_box.test();
 //  }
-//  // synth turb with periodic box flow with more waves
+  // synth turb with periodic box flow with more waves
   {
-    constexpr int NModes=1000,//200,
+    constexpr int NModes=200,
                   NWaves=50;
     tester_synth_turb_multiwave<SynthTurb::SynthTurb3d_periodic_box_multiwave, NModes, NWaves> periodic_box_multiwave("pair_separation_periodic_box_multiwave.dat");
     periodic_box_multiwave.test();
