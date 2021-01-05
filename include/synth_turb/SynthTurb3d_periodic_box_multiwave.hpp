@@ -145,7 +145,7 @@ namespace SynthTurb
 
       for(int n=0; n<Nmodes; ++n)
       {
-        std::cerr << "nn[" << n << "]: " << nn[n] << std::endl;
+//        std::cerr << "nn[" << n << "]: " << nn[n] << std::endl;
         k[n] = sqrt(real_t(nn[n])) * (2. * M_PI / Lmax);
       //  k[n] = sqrt(nn[n]) * (2. * M_PI / Lmax);
       }
