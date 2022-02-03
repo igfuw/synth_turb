@@ -10,6 +10,7 @@
 #include <array>
 #include <algorithm>
 #include <iostream>
+#include <cassert>
 #include <chrono>
 
 namespace SynthTurb
@@ -76,8 +77,8 @@ namespace SynthTurb
       #pragma omp parallel for
       for(int n=0; n<Nmodes; ++n)
       {
-        std::normal_distribution<real_t> normal_d(0,1);
-        std::default_random_engine local_rand_eng(std::duration_cast<std::milliseconds>(std::system_clock::now().time_since_epoch()));
+        thread_local std::normal_distribution<real_t> normal_d(0,1);
+        thread_local std::default_random_engine local_rand_eng(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
         real_t relax = exp(-wn[n] * dt);
 
         for(int m=0; m<Nwaves[n]; m+=2)
@@ -158,7 +159,7 @@ namespace SynthTurb
 
         if(Nwaves[n] > Nwaves_max) // random shuffle, because not all possible degeneracies will be used
         {
-          std::default_random_engine local_rand_eng(std::duration_cast<std::milliseconds>(std::system_clock::now().time_since_epoch()));
+          thread_local std::default_random_engine local_rand_eng((std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())).count());
           std::shuffle(std::begin(vectors), std::end(vectors), local_rand_eng);
           Nwaves[n] = Nwaves_max;
         }
@@ -209,10 +210,10 @@ namespace SynthTurb
      //    std::cerr << std::endl;
      // }
 
-      std::default_random_engine local_rand_eng(std::duration_cast<std::milliseconds>(std::system_clock::now().time_since_epoch()));
+      thread_local std::default_random_engine local_rand_eng(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
       for(int n=0; n<Nmodes; ++n)
       {
-        std::normal_distribution<real_t> G_d(0, std_dev[n]);
+        thread_local std::normal_distribution<real_t> G_d(0, std_dev[n]);
 
         for(int m=0; m<Nwaves[n]; ++m)
         {
