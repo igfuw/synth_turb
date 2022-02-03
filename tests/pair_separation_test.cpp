@@ -269,34 +269,38 @@ int main()
     " T: " << T <<   " [s] " <<
     std::endl;
 
-  for(auto diss_rate: {1,10,100,1000}) // [cm2/s3]
+  for(auto diss_rate: {0.01, 0.1, 1., 10., 100., 1000.}) // [cm2/s3]
   {
-    std::cout << " diss_rate: " << diss_rate << " [m^2/s^3]" << std::endl;
+    std::cout << " diss_rate: " << diss_rate << " [cm^2/s^3]" << std::endl;
+    std::string diss_name = std::to_string(diss_rate);
+    // remove trailing chars
+    diss_name.erase ( diss_name.find_last_not_of('0') + 1, std::string::npos ); 
+    diss_name.erase ( diss_name.find_last_not_of('.') + 1, std::string::npos );
 
     // synth turb with periodic box flow
     {
-      constexpr int NModes=1000,
-                    NWaves=6;
-      tester_synth_turb<SynthTurb::SynthTurb3d_periodic_box, NModes, NWaves> periodic_box("pair_separation_periodic_box_EPS"+std::to_string(diss_rate)+".dat", diss_rate*1e-4);
+      constexpr int NModes=100, // 1000
+                    NWaves=6;   // 6
+      tester_synth_turb<SynthTurb::SynthTurb3d_periodic_box, NModes, NWaves> periodic_box("pair_separation_periodic_box_EPS"+diss_name+".dat", diss_rate*1e-4);
       periodic_box.test();
     }
     // synth turb with periodic box flow with more waves
     {
-      constexpr int NModes=200,
-                    NWaves=50;
-      tester_synth_turb_multiwave<SynthTurb::SynthTurb3d_periodic_box_multiwave, NModes, NWaves> periodic_box_multiwave("pair_separation_periodic_box_multiwave_EPS"+std::to_string(diss_rate)+".dat", diss_rate*1e-4);
+      constexpr int NModes=100, // 200
+                    NWaves=10;  // 50
+      tester_synth_turb_multiwave<SynthTurb::SynthTurb3d_periodic_box_multiwave, NModes, NWaves> periodic_box_multiwave("pair_separation_periodic_box_multiwave_EPS"+diss_name+".dat", diss_rate*1e-4);
       periodic_box_multiwave.test();
     }
     // synth turb with all waves
     {
-      constexpr int NModes=200,//200,
-                    NWaves=50;//50;
-      tester_synth_turb<SynthTurb::SynthTurb3d_all_waves, NModes, NWaves> all_waves("pair_separation_all_waves_EPS"+std::to_string(diss_rate)+".dat", diss_rate*1e-4);
+      constexpr int NModes=200, //200
+                    NWaves=50;  //50
+      tester_synth_turb<SynthTurb::SynthTurb3d_all_waves, NModes, NWaves> all_waves("pair_separation_all_waves_EPS"+diss_name+".dat", diss_rate*1e-4);
       all_waves.test();
     }
     // GA17 SGS model
     {
-      tester_rand_turb<RandTurb::RandTurb_GA17> GA17("pair_separation_GA17_EPS"+std::to_string(diss_rate)+".dat", diss_rate*1e-4);
+      tester_rand_turb<RandTurb::RandTurb_GA17> GA17("pair_separation_GA17_EPS"+diss_name+".dat", diss_rate*1e-4);
       GA17.test();
     }
   }

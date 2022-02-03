@@ -24,4 +24,4 @@ for eps in [1,10,100,1000]:
   #plt.ylim(0,1500)
   plt.ylabel('pair separation [m] (mean+-std dev)')
   plt.legend()
-  plt.savefig('pair_separation_series_'+simname+'.png')
+  plt.savefig('pair_separation_series_EPS'+str(eps)+'.png')
