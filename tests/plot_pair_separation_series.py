@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 #datadir = '/home/piotr/praca/coal_fluctu_dim/synth_turb_tests/separation_data/DT0.1_L1_EPS0.1/'
 datadir = 'build/'
 
-for eps in [1,10,100,1000]:
+for eps in [0.01,0.1,1,10,100,1000]:
   plt.clf()
   for sim_type in ["all_waves", "periodic_box", "periodic_box_multiwave", "GA17"]:
     simname = str(sim_type)+'_EPS'+str(eps)

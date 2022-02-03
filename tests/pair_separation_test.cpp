@@ -13,7 +13,7 @@
 //#define _NMODES 200
 //#define _NWAVES 5//50
 
-#define NPairs 10 // 1000 // number of test particle pairs
+#define NPairs 100 // 1000 // number of test particle pairs
 #define InitSep 1 // initial separation [in units of the Kolmogorov length]
 #define LKol 1e-3 // Kolmogorov length [m]
 #define Lmax 1 // integral length [m]
@@ -260,6 +260,8 @@ class tester_rand_turb : public tester_common
 
 int main()
 {
+  if(omp_get_max_threads() > NPairs)
+    omp_set_num_threads(NPairs);
   std::cout <<
     "NPairs: " << NPairs <<
     " InitSep: " << InitSep << " [in units of Lkol] " <<
@@ -271,7 +273,8 @@ int main()
 
   for(auto diss_rate: {0.01, 0.1, 1., 10., 100., 1000.}) // [cm2/s3]
   {
-    std::cout << " diss_rate: " << diss_rate << " [cm^2/s^3]" << std::endl;
+    std::cout << std::endl;
+    std::cout << "diss_rate: " << diss_rate << " [cm^2/s^3]" << std::endl;
     std::string diss_name = std::to_string(diss_rate);
     // remove trailing chars
     diss_name.erase ( diss_name.find_last_not_of('0') + 1, std::string::npos ); 
@@ -279,15 +282,15 @@ int main()
 
     // synth turb with periodic box flow
     {
-      constexpr int NModes=100, // 1000
-                    NWaves=6;   // 6
+      constexpr int NModes=1000, // 1000
+                    NWaves=6;    // 6
       tester_synth_turb<SynthTurb::SynthTurb3d_periodic_box, NModes, NWaves> periodic_box("pair_separation_periodic_box_EPS"+diss_name+".dat", diss_rate*1e-4);
       periodic_box.test();
     }
     // synth turb with periodic box flow with more waves
     {
-      constexpr int NModes=100, // 200
-                    NWaves=10;  // 50
+      constexpr int NModes=500, // 200
+                    NWaves=50;  // 50
       tester_synth_turb_multiwave<SynthTurb::SynthTurb3d_periodic_box_multiwave, NModes, NWaves> periodic_box_multiwave("pair_separation_periodic_box_multiwave_EPS"+diss_name+".dat", diss_rate*1e-4);
       periodic_box_multiwave.test();
     }
