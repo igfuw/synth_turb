@@ -11,8 +11,11 @@ labels = {
   "periodic_box_multiwave" : "periodic"
 }
 
-for eps in [0.01,0.1,1,10,100,1000]:
-  plt.clf()
+fig, axs = plt.subplots(3,1, figsize=(6.3,6.3))
+
+#for eps in [0.01,0.1,1,10,100,1000]:
+for i, eps in enumerate([1,10,100]):
+#  plt.clf()
   #for sim_type in ["all_waves", "periodic_box", "periodic_box_multiwave", "GA17"]:
   for sim_type in ["all_waves", "periodic_box"]:
     simname = str(sim_type)+'_EPS'+str(eps)
@@ -24,12 +27,19 @@ for eps in [0.01,0.1,1,10,100,1000]:
   #  mean_r /= 1e-3
   #  sig_r /= 1e-3
   
-    plt.plot(time, mean_r, label=labels[sim_type])
-    plt.fill_between(time, mean_r-sig_r, mean_r+sig_r, alpha=0.1)
+    axs[i].plot(time, mean_r, label=labels[sim_type])
+    axs[i].fill_between(time, mean_r-sig_r, mean_r+sig_r, alpha=0.1)
+    axs[i].set_title('$\epsilon = '+str(eps)+'\mathrm{cm}^2 \mathrm{s}^{-3}$')
   
-  plt.xlabel('time [s]')
   #plt.xlim(0,150)
   #plt.ylim(0,1500)
-  plt.ylabel('pair separation [m] (mean+-std dev)')
-  plt.legend()
-  plt.savefig('pair_separation_series_EPS'+str(eps)+'.png')
+  axs[i].set_ylabel('pair separation [m]')
+
+axs[0].tick_params(labelbottom=False)
+axs[1].tick_params(labelbottom=False)
+
+axs[2].set_xlabel('time [s]')
+axs[0].legend()
+plt.tight_layout()
+plt.savefig('pair_separation_series.png')
+plt.savefig('pair_separation_series.pdf')
